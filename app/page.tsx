@@ -108,7 +108,7 @@ export default function Home() {
                   <div className="space-y-2 text-sm">
                     <p><span className="text-neutral-400">Username:</span> {result.username}</p>
                     <p><span className="text-neutral-400">Display Name:</span> {result.displayName}</p>
-                    <p><span className="text-neutral-400">Status:</span> {result.accountType === 'public_profile' ? 'Public ✓' : accountType === 'mixed_public' ? 'Public partiel 🔓' : 'Privé 🔒'}</p>
+                    <p><span className="text-neutral-400">Status:</span> {result.accountType === 'public_profile' ? 'Public ✓' : result.accountType === 'mixed_public' ? 'Public partiel 🔓' : 'Privé 🔒'}</p>
                     {result.subscriberCount && (
                       <p><span className="text-neutral-400">Abonnés:</span> {result.subscriberCount.toLocaleString()}</p>
                     )}
