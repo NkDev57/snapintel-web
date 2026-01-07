@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       accountType: accountType,
       hasPublicStories: false,
       publicStoriesUrl: `https://www.snapchat.com/@${username}`,
-      pageType: pageType
+      pageType: pageType,
             stats: {
         stories: 0,
         highlights: 0,
