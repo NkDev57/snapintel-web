@@ -69,46 +69,41 @@ export async function POST(request: NextRequest) {
     const userProfile = pageProps.userProfile || {};
     
     const pageType = userProfile.pageType;
-    const isPrivate = pageType !== 18;
-
+        
+    // Compter les contenus publics disponibles
+    const publicProfileInfo = userProfile.publicProfileInfo || {};
+    const storySnaps = publicProfileInfo.snapList || [];
+    const curatedHighlights = publicProfileInfo.curatedHighlights || [];
+    const spotlightHighlights = publicProfileInfo.spotlightHighlights || [];
+    const lenses = publicProfileInfo.lenses || [];
+    
+    // Déterminer le type de compte
+    const isPublicProfile = pageType === 18;
+    const hasPublicContent = storySnaps.length > 0 || spotlightHighlights.length > 0;
+    
+    let accountType: string;
+    if (isPublicProfile) {
+      accountType = 'public_profile';
+    } else if (hasPublicContent) {
+      accountType = 'mixed_public';
+    } else {
+      accountType = 'private';
+    }
+    
     let result: any = {
       username: username,
       displayName: userProfile.title || username,
-      isPrivate: isPrivate,
+      accountType: accountType,
+      isPrivate: !isPublicProfile,
       stats: {
-        stories: 0,
-        highlights: 0,
-        spotlights: 0,
-        lenses: 0
+        stories: storySnaps.length,
+        highlights: curatedHighlights.length,
+        spotlights: spotlightHighlights.length,
+        lenses: lenses.length
       }
     };
 
-    if (!isPrivate) {
-      // Compte public - extraire toutes les stats
-      const publicProfileInfo = userProfile.publicProfileInfo || {};
-      
-      // Stories
-      const storySnaps = publicProfileInfo.snapList || [];
-      result.stats.stories = storySnaps.length;
-
-      // Highlights
-      const curatedHighlights = publicProfileInfo.curatedHighlights || [];
-      result.stats.highlights = curatedHighlights.length;
-
-      // Spotlights
-      const spotlightHighlights = publicProfileInfo.spotlightHighlights || [];
-      result.stats.spotlights = spotlightHighlights.length;
-
-      // Lenses
-      const lenses = publicProfileInfo.lenses || [];
-      result.stats.lenses = lenses.length;
-
-      // Informations additionnelles
-      result.subscriberCount = publicProfileInfo.subscriberCount;
-      result.bio = publicProfileInfo.bio;
-      result.profilePictureUrl = publicProfileInfo.profilePictureUrl;
-    }
-
+    
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error analyzing user:', error);
