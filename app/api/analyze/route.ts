@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+// Real Snapchat data fetching implementation
 
 // Fonction pour extraire le JSON de la page Snapchat
 function extractJSON(html: string): any {
