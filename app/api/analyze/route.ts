@@ -38,9 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const nextData = JSON.parse(scriptContent);
-        console.log('nextData keys:', Object.keys(nextData));
-            console.log('nextData.props:', nextData?.props);
-    const props = nextData?.props?.pageProps?.userProfile?.userInfo?.publicProfileInfo;
+    const props = nextData?.props?.pageProps?.userProfile?.publicProfileInfo;
 
     if (!props) {
       throw new Error('Could not extract profile data from __NEXT_DATA__');
