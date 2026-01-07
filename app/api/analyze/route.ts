@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
     const $ = cheerio.load(html);
 
     // Extraire le JSON __NEXT_DATA__
-    const scriptContent = $('#__NEXT_DATA__').html();
+    const scriptContent = $('script#__NEXT_DATA__').html();
     
+
     if (!scriptContent) {
       throw new Error('Could not find __NEXT_DATA__ in HTML');
     }
