@@ -106,14 +106,14 @@ export default function Home() {
                 <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-6 space-y-3">
                   <h3 className="text-lg font-semibold">Compte</h3>
                   <div className="space-y-2 text-sm">
-                    <p><span className="text-neutral-400">Username:</span> {result.user.username}</p>
-                    <p><span className="text-neutral-400">Display Name:</span> {result.user.displayName}</p>
-                    <p><span className="text-neutral-400">Status:</span> {result.user.isPrivate ? 'Privé 🔒' : 'Public'}</p>
-                    {result.user.subscriberCount && (
-                      <p><span className="text-neutral-400">Abonnés:</span> {result.user.subscriberCount.toLocaleString()}</p>
+                    <p><span className="text-neutral-400">Username:</span> {result.username}</p>
+                    <p><span className="text-neutral-400">Display Name:</span> {result.displayName}</p>
+                    <p><span className="text-neutral-400">Status:</span> {result.isPrivate ? 'Privé 🔒' : 'Public'}</p>
+                    {result.subscriberCount && (
+                      <p><span className="text-neutral-400">Abonnés:</span> {result.subscriberCount.toLocaleString()}</p>
                     )}
-                    {result.user.bio && (
-                      <p><span className="text-neutral-400">Bio:</span> {result.user.bio}</p>
+                    {result.bio && (
+                      <p><span className="text-neutral-400">Bio:</span> {result.bio}</p>
                     )}
                   </div>
                 </div>
@@ -122,10 +122,10 @@ export default function Home() {
                   <h3 className="text-lg font-semibold mb-4">Statistiques</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { label: 'Stories', value: result.stats.totalStories },
-                      { label: 'Highlights', value: result.stats.totalHighlights },
-                      { label: 'Spotlights', value: result.stats.totalSpotlights },
-                      { label: 'Lenses', value: result.stats.totalLenses },
+                      { label: 'Stories', value: result.stats.stories },
+                      { label: 'Highlights', value: result.stats.highlights },
+                      { label: 'Spotlights', value: result.stats.spotlights },
+                      { label: 'Lenses', value: result.stats.lenses },
                     ].map((stat) => (
                       <div key={stat.label} className="bg-black/50 rounded-lg p-4 text-center">
                         <p className="text-2xl font-bold">{stat.value}</p>
@@ -134,28 +134,6 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
-
-                {result.stories && result.stories.length > 0 && (
-                  <div className="bg-neutral-950 border border-neutral-800 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4">Stories ({result.stories.length})</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {result.stories.slice(0, 6).map((story: any, i: number) => (
-                        <div key={i} className="bg-black/50 rounded-lg p-3 text-xs space-y-1">
-                          <p className="text-neutral-400">Index: {story.snapIndex}</p>
-                          <p className="text-neutral-400">Type: {story.mediaType === 0 ? 'Image' : 'Video'}</p>
-                          {story.timestamp && (
-                            <p className="text-neutral-500 text-[10px]">{new Date(story.timestamp).toLocaleString('fr-FR')}</p>
-                          )}
-                          {story.mediaUrl && (
-                            <a href={story.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline block truncate">
-                              Voir média
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </motion.section>
