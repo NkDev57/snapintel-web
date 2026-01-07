@@ -31,13 +31,15 @@ export async function POST(request: NextRequest) {
 
     // Extraire le JSON __NEXT_DATA__
     const scriptContent = $('script#__NEXT_DATA__').html();
-    
+
 
     if (!scriptContent) {
       throw new Error('Could not find __NEXT_DATA__ in HTML');
     }
 
     const nextData = JSON.parse(scriptContent);
+        console.log('nextData keys:', Object.keys(nextData));
+            console.log('nextData.props:', nextData?.props);
     const props = nextData?.props?.pageProps?.userProfile?.userInfo?.publicProfileInfo;
 
     if (!props) {
