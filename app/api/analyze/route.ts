@@ -29,48 +29,72 @@ export async function POST(request: NextRequest) {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // Extraire le nom d'affichage
-    const displayName = $('h1').first().text().trim() || username;
-
-    // Extraire les spotlights avec regex depuis le texte HTML
-    const spotlightMatches = html.matchAll(/\[(\d+k?)\s*(?:\n|\s)*(\d+)\s*(?:\n|\s)*(\d+)?\]/gi);
-    const spotlights: any[] = [];
-
-    for (const match of spotlightMatches) {
-      const views = match[1]; // "12k", "6k", etc.
-      const likes = match[2];
-      const comments = match[3] || '0';
-      
-      spotlights.push({
-        views,
-        likes,
-        comments
-      });
+    // Extraire le JSON __NEXT_DATA__
+    const nextDataScript = $('#__NEXT_DATA__').html();
+    if (!nextDataScript) {
+      throw new Error('Could not find __NEXT_DATA__ in HTML');
     }
 
-    // Détecter si le compte a des stories (cercle bleu)
-    const hasPublicStories = html.includes('Stories') && html.includes('Spotlight');
+    const nextData = JSON.parse(nextDataScript);
+    const profileData = nextData?.props?.pageProps?.userProfile?.userInfo;
 
-    console.log(`Found ${spotlights.length} spotlights`);
+    if (!profileData) {
+      throw new Error('Could not extract profile data from __NEXT_DATA__');
+    }
 
+    // Extraire les informations basiques
+    const displayName = profileData.displayName || username;
+    const pageType = profileData.pageType || 0;
+
+    // Déterminer le type de compte
+    let accountType = 'private';
+    if (pageType === 18) {
+      accountType = 'public_profile';
+    } else if (pageType === 19 || pageType === 20) {
+      accountType = 'mixed_public';
+    }
+
+    // Extraire les stories publiques
+    const publicStories = nextData?.props?.pageProps?.story?.snapList || [];
+    const storiesCount = publicStories.length;
+    
+    // Créer les liens vers les stories
+    const storyLinks = publicStories.map((story: any) => ({
+      id: story.snapId?.value || '',
+      url: `https://www.snapchat.com/@${username}/${story.snapId?.value || ''}`,
+      timestamp: story.timestampInSec?.value || 0
+    }));
+
+    // Extraire les spotlights
+    const spotlightsData = nextData?.props?.pageProps?.spotlights || [];
+    const spotlightsCount = spotlightsData.length;
+
+    // Extraire les highlights
+    const highlightsData = nextData?.props?.pageProps?.highlights || [];
+    const highlightsCount = highlightsData.length;
+
+    // Extraire subscriber count si disponible
+    const subscriberCount = profileData.subscriberCount?.value || 0;
+
+    // Retourner les données
     return NextResponse.json({
       username,
       displayName,
-      accountType: spotlights.length > 0 ? 'mixed_public' : 'private',
-      isPrivate: false,
-      stats: {
-        stories: hasPublicStories ? 1 : 0,
-        highlights: 0,
-        spotlights: spotlights.length,
-        lenses: 0
-      },
-      spotlightDetails: spotlights
+      accountType,
+      pageType,
+      publicStoriesCount: storiesCount,
+      publicStories: storyLinks,
+      spotlightsCount,
+      highlightsCount,
+      subscriberCount,
+      lensesCount: 0, // Pas d'info sur les lenses dans __NEXT_DATA__
+      success: true
     });
 
   } catch (error: any) {
-    console.error('Error scraping Snapchat:', error);
+    console.error('Error analyzing Snapchat profile:', error);
     return NextResponse.json(
-      { error: 'Failed to scrape Snapchat data', details: error.message },
+      { error: error.message || 'An error occurred' },
       { status: 500 }
     );
   }
