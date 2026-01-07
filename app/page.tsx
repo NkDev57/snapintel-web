@@ -109,7 +109,7 @@ export default function Home() {
                     <p><span className="text-neutral-400">Username:</span> {result.username}</p>
                     <p><span className="text-neutral-400">Display Name:</span> {result.displayName}</p>
                                     <p><span className="text-neutral-400">Status:</span> {result.accountType}</p>
-                    {result.subscriberCount && (
+                                    {result.subscriberCount > 0 && (
                       <p><span className="text-neutral-400">Abonnés:</span> {result.subscriberCount.toLocaleString()}</p>
                     )}
                     {result.bio && (
