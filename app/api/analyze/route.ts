@@ -70,6 +70,12 @@ export async function POST(request: NextRequest) {
       hasPublicStories: false,
       publicStoriesUrl: `https://www.snapchat.com/@${username}`,
       pageType: pageType
+            stats: {
+        stories: 0,
+        highlights: 0,
+        spotlights: totalSpotlights,
+        lenses: 0
+      }
     };
 
     console.log('Extracted profile data:', result);
