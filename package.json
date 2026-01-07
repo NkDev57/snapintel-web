@@ -14,6 +14,8 @@
     "react-dom": "^18.2.0",
     "framer-motion": "^10.16.16",
     "cheerio": "^1.0.0-rc.12"
+    "puppeteer-core": "^22.0.0",
+    "@sparticuz/chromium": "^123.0.0",
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -26,4 +28,5 @@
     "eslint": "^8",
     "eslint-config-next": "14.0.4"
   }
+
 }
