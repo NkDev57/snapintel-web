@@ -30,71 +30,54 @@ export async function POST(request: NextRequest) {
     const $ = cheerio.load(html);
 
     // Extraire le JSON __NEXT_DATA__
-    const nextDataScript = $('#__NEXT_DATA__').html();
-    if (!nextDataScript) {
+    const scriptContent = $('#__NEXT_DATA__').html();
+    
+    if (!scriptContent) {
       throw new Error('Could not find __NEXT_DATA__ in HTML');
     }
 
-    const nextData = JSON.parse(nextDataScript);
-    const profileData = nextData?.props?.pageProps?.userProfile?.userInfo;
+    const nextData = JSON.parse(scriptContent);
+    const props = nextData?.props?.pageProps?.userProfile?.userInfo?.publicProfileInfo;
 
-    if (!profileData) {
+    if (!props) {
       throw new Error('Could not extract profile data from __NEXT_DATA__');
     }
 
-    // Extraire les informations basiques
-    const displayName = profileData.displayName || username;
-    const pageType = profileData.pageType || 0;
-
     // Déterminer le type de compte
-    let accountType = 'private';
+    let accountType = 'Privé';
+    const pageType = props.pageType;
+    const hasPublicContent = props.snapcodeImageUrl || props.profilePictureUrl;
+    const totalSpotlights = props.totalSpotlightCount || 0;
+    const subscriberCount = props.subscriberCount || 0;
+
     if (pageType === 18) {
-      accountType = 'public_profile';
-    } else if (pageType === 19 || pageType === 20) {
-      accountType = 'mixed_public';
+      accountType = 'Public';
+    } else if (hasPublicContent || totalSpotlights > 0 || subscriberCount > 0) {
+      accountType = 'Mixte (Public partiel)';
     }
 
-    // Extraire les stories publiques
-    const publicStories = nextData?.props?.pageProps?.story?.snapList || [];
-    const storiesCount = publicStories.length;
-    
-    // Créer les liens vers les stories
-    const storyLinks = publicStories.map((story: any) => ({
-      id: story.snapId?.value || '',
-      url: `https://www.snapchat.com/@${username}/${story.snapId?.value || ''}`,
-      timestamp: story.timestampInSec?.value || 0
-    }));
+    // Construire la réponse avec TOUTES les stats même pour comptes non pageType=18
+    const result = {
+      username: props.username || username,
+      displayName: props.displayName || props.username || username,
+      bio: props.bio || '',
+      snapcodeUrl: props.snapcodeImageUrl || '',
+      profilePictureUrl: props.profilePictureUrl || '',
+      subscriberCount: subscriberCount,
+      totalSpotlightCount: totalSpotlights,
+      accountType: accountType,
+      hasPublicStories: false,
+      publicStoriesUrl: `https://www.snapchat.com/@${username}`,
+      pageType: pageType
+    };
 
-    // Extraire les spotlights
-    const spotlightsData = nextData?.props?.pageProps?.spotlights || [];
-    const spotlightsCount = spotlightsData.length;
+    console.log('Extracted profile data:', result);
 
-    // Extraire les highlights
-    const highlightsData = nextData?.props?.pageProps?.highlights || [];
-    const highlightsCount = highlightsData.length;
-
-    // Extraire subscriber count si disponible
-    const subscriberCount = profileData.subscriberCount?.value || 0;
-
-    // Retourner les données
-    return NextResponse.json({
-      username,
-      displayName,
-      accountType,
-      pageType,
-      publicStoriesCount: storiesCount,
-      publicStories: storyLinks,
-      spotlightsCount,
-      highlightsCount,
-      subscriberCount,
-      lensesCount: 0, // Pas d'info sur les lenses dans __NEXT_DATA__
-      success: true
-    });
-
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error analyzing Snapchat profile:', error);
     return NextResponse.json(
-      { error: error.message || 'An error occurred' },
+      { error: error.message || 'Failed to analyze profile' },
       { status: 500 }
     );
   }
