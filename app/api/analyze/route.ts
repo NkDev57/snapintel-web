@@ -1,37 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-// Real Snapchat data fetching implementation
-
-// Fonction pour extraire le JSON de la page Snapchat
-function extractJSON(html: string): any {
-  const regex = /<script[^>]+type="application\/json"[^>]*>(.*?)<\/script>/s;
-  const match = html.match(regex);
-  
-  if (match && match[1]) {
-    try {
-      return JSON.parse(match[1]);
-    } catch (e) {
-      console.error('Failed to parse JSON:', e);
-      return null;
-    }
-  }
-  return null;
-}
-
-// Fonction pour obtenir une valeur depuis un chemin dans le JSON
-function getValue(data: any, path: string): any {
-  const keys = path.split('.');
-  let result = data;
-  
-  for (const key of keys) {
-    if (result && typeof result === 'object') {
-      result = result[key];
-    } else {
-      return undefined;
-    }
-  }
-  
-  return result;
-}
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,73 +13,86 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Faire la requête vers Snapchat
-    const url = `https://www.snapchat.com/add/${username}`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-      }
+    console.log(`Scraping Snapchat profile: ${username}`);
+
+    // Lancer Puppeteer avec Chromium
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch Snapchat data');
-    }
+    const page = await browser.newPage();
+    
+    // Naviguer vers le profil Snapchat
+    const url = `https://www.snapchat.com/@${username}`;
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
 
-    const html = await response.text();
-    const jsonData = extractJSON(html);
+    // Attendre que le contenu se charge
+    await page.waitForTimeout(5000);
 
-    if (!jsonData) {
-      throw new Error('No JSON data found in response');
-    }
+    // Extraire les données des Spotlights
+    const spotlights = await page.evaluate(() => {
+      const spotlightElements = document.querySelectorAll('[data-testid="spotlight-item"], .Spotlight_item, article');
+      const results: any[] = [];
+      
+      spotlightElements.forEach((el: any) => {
+        // Extraire les vues
+        const viewsText = el.textContent?.match(/(\d+k|\d+m)/gi);
+        if (viewsText) {
+          results.push({
+            views: viewsText[0],
+            element: el.className
+          });
+        }
+      });
+      
+      return results;
+    });
 
-    // Extraire les données selon la structure de SnapIntel
-    const props = jsonData.props || {};
-    const pageProps = props.pageProps || {};
-    const userProfile = pageProps.userProfile || {};
-    
-    const pageType = userProfile.pageType;
-        
-    // Compter les contenus publics disponibles
-    const publicProfileInfo = userProfile.publicProfileInfo || {};
-    const storySnaps = publicProfileInfo.snapList || [];
-    const curatedHighlights = publicProfileInfo.curatedHighlights || [];
-    const spotlightHighlights = publicProfileInfo.spotlightHighlights || [];
-    const lenses = publicProfileInfo.lenses || [];
-    
-    // Déterminer le type de compte
-    const isPublicProfile = pageType === 18;
-    const hasPublicContent = storySnaps.length > 0 || spotlightHighlights.length > 0;
-    
-    let accountType: string;
-    if (isPublicProfile) {
-      accountType = 'public_profile';
-    } else if (hasPublicContent) {
-      accountType = 'mixed_public';
-    } else {
-      accountType = 'private';
-    }
-    
-    let result: any = {
-      username: username,
-      displayName: userProfile.title || username,
-      accountType: accountType,
-      isPrivate: !isPublicProfile,
-      stats: {
-        stories: storySnaps.length,
-        highlights: curatedHighlights.length,
-        spotlights: spotlightHighlights.length,
-        lenses: lenses.length
+    // Extraire les stories publiques (cercle bleu)
+    const hasPublicStories = await page.evaluate(() => {
+      // Chercher l'indicateur de story (cercle bleu autour de la photo de profil)
+      const profilePic = document.querySelector('[data-testid="profile-picture"], .ProfileHeader_profilePicture');
+      if (profilePic) {
+        const hasStoryRing = profilePic.classList.contains('has-story') || 
+                             profilePic.parentElement?.classList.contains('has-story') ||
+                             window.getComputedStyle(profilePic).border.includes('rgb');
+        return hasStoryRing;
       }
-    };
+      return false;
+    });
 
-    
-    return NextResponse.json(result);
+    // Extraire le nom d'affichage
+    const displayName = await page.evaluate(() => {
+      const nameEl = document.querySelector('h1, [data-testid="display-name"]');
+      return nameEl?.textContent || '';
+    });
+
+    await browser.close();
+
+    console.log(`Found ${spotlights.length} spotlights, has stories: ${hasPublicStories}`);
+
+    return NextResponse.json({
+      username,
+      displayName,
+      accountType: spotlights.length > 0 || hasPublicStories ? 'mixed_public' : 'private',
+      isPrivate: false,
+      stats: {
+        stories: hasPublicStories ? 1 : 0,
+        highlights: 0,
+        spotlights: spotlights.length,
+        lenses: 0
+      },
+      spotlightDetails: spotlights
+    });
+
   } catch (error: any) {
-    console.error('Error analyzing user:', error);
+    console.error('Error scraping Snapchat:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to analyze user' },
+      { error: 'Failed to scrape Snapchat data', details: error.message },
       { status: 500 }
     );
   }
 }
-// Force redeploy
