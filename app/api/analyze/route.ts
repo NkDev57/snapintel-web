@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     if (!props) {
       throw new Error('Could not extract profile data from __NEXT_DATA__');
     }
+        console.log('pageProps keys:', Object.keys(nextData?.props?.pageProps || {}));
         console.log('props keys:', Object.keys(props));
 
     // Déterminer le type de compte
