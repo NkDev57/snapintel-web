@@ -79,9 +79,7 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    43
-      profile data:', result);
-
+    console.log('Extracted profile data:', result);
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error analyzing Snapchat profile:', error);
