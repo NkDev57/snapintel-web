@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     if (!props) {
       throw new Error('Could not extract profile data from __NEXT_DATA__');
     }
+        console.log('props keys:', Object.keys(props));
 
     // Déterminer le type de compte
     let accountType = 'Privé';
@@ -78,7 +79,8 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    console.log('Extracted profile data:', result);
+    43
+      profile data:', result);
 
     return NextResponse.json(result);
   } catch (error: any) {
